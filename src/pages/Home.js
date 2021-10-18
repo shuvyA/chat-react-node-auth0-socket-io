@@ -33,6 +33,7 @@ const Home = () => {
     const getIsUserAdmin = async () => {
       try {
         const response = await getIsAdminUser(token);
+        console.log({ response });
         if (response?.data) {
           setIsAdmin(true);
         }
