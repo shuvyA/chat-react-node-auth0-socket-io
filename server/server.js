@@ -80,5 +80,5 @@ io.on("disconnect", () => {
 
 console.log("REACT_API_PORT: " + process.env.REACT_APP_DOMAIN_AUTH0);
 
-const PORT = process.env.SERVER_PORT || 8080;
+const PORT = process.env.PORT || 8080;
 http.listen(PORT, () => console.log(`Server Running`, PORT));
