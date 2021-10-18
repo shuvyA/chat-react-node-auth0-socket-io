@@ -14,11 +14,6 @@ app.use(cors());
 if (process.env.NODE_ENV === "production") {
   const buildPath = path.join(__dirname, "..", "build");
   app.use(express.static(buildPath));
-
-  // Handle React routing, return all requests to React app
-  // app.get("*", function (req, res) {
-  //   res.sendFile(path.join(__dirname, "..", "build/index.html"));
-  // });
 }
 
 const verifyJwt = jwt({
