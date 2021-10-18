@@ -1,44 +1,77 @@
-import React from "react";
-import Alert from "@mui/material/Alert";
+import React, { useEffect, useRef } from "react";
+import PropTypes from "prop-types";
 import styled from "@emotion/styled";
+import MessagePreview from "./MessagePreview";
+import { MEDIA_QUERY_MOBILE } from "../constants/chat.constants";
 
-const Messages = ({ messages }) => {
-  if (!messages) {
-    return <div> Please write a first message the chat is emptyt </div>;
+const Messages = ({ messages, user }) => {
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef?.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(scrollToBottom, [messages]);
+
+  if (messages?.length === 0) {
+    return (
+      <Container> Please write a first message the chat is empty </Container>
+    );
   }
 
-  // textMessage: "2372sdfhjh r h hj j",
-  //   timeStamp: 23243,
-  //   userId: "userId",
-  //   id: "eqwesdsdf",
-  // message.ownedByCurrentUser ? "my-message" : "received-message"
   return (
     <Container>
-      <h1>Messages</h1>
       {messages &&
-        messages.map(({ id, textMessage }) => (
-          <div key={id}>
-            <AlertStyled severity="success" icon={false}>
-              {textMessage}
-            </AlertStyled>
-          </div>
-        ))}
+        messages.map((message) => {
+          const isMyMessage = message.userId === user?.sub;
+          return (
+            <MessagePreview
+              key={message.id}
+              message={message}
+              isMyMessage={isMyMessage}
+            />
+          );
+        })}
+      <div ref={messagesEndRef} />
     </Container>
   );
 };
 
 const Container = styled.div`
-  margin: 20px auto;
-  height: 450px;
+  min-height: calc(100vh - 540px);
+  height: 100%;
+  max-height: 240px;
   overflow: auto;
-  //padding: 30px;
-  //display: flex;
-  //margin-left: 12px;
+  padding: 20px;
+
+  @media (max-width: ${MEDIA_QUERY_MOBILE}px) {
+    min-height: calc(100vh - 440px);
+  }
 `;
 
-const AlertStyled = styled(Alert)`
-  margin-top: 10px;
-  margin-bottom: 10px;
-`;
+Messages.propTypes = {
+  messages: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string,
+      userId: PropTypes.string,
+      textMessage: PropTypes.string,
+      messageAdminOnly: PropTypes.bool,
+      time: PropTypes.number,
+      name: PropTypes.string,
+    })
+  ),
+  user: PropTypes.shape({
+    email: PropTypes.string,
+    email_verified: PropTypes.bool,
+    family_name: PropTypes.string,
+    given_name: PropTypes.string,
+    locale: PropTypes.string,
+    name: PropTypes.string,
+    nickname: PropTypes.string,
+    picture: PropTypes.string,
+    sub: PropTypes.string,
+    updated_at: PropTypes.string,
+  }),
+};
 
 export default Messages;

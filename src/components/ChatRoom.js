@@ -1,64 +1,109 @@
 import React, { useEffect, useRef, useState } from "react";
-import Messages from "./Messages";
-import NewMessage from "./NewMessage";
+import styled from "@emotion/styled";
+import PropTypes from "prop-types";
+import { useAuth0 } from "@auth0/auth0-react";
 import io from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
+import NewMessage from "./NewMessage";
+import Switch from "@mui/material/Switch";
+import Messages from "./Messages";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { BASE_API_URL } from "../constants/chat.constants";
 
-// const messages = [
-//   {
-//     textMessage: "2372sdfhjh r h hj j",
-//     timeStamp: 23243,
-//     userId: "userId",
-//     id: "eqwesdsdf",
-//   },
-//   {
-//     textMessage: "2372sdfhjh gds h hj j",
-//     timeStamp: 23247,
-//     userId: "userId",
-//     id: "312231312",
-//   },
-//   {
-//     textMessage: "2372sdfdfdfdfhjh fdhfjdhsf h hj j",
-//     timeStamp: 23249,
-//     userId: "userId",
-//     id: "okjoks",
-//   },
-//   {
-//     textMessage: "2372sddasdsadfhjh fdhfjdhsf h hj j",
-//     timeStamp: 232410,
-//     userId: "userId",
-//     id: "9ikdjewu",
-//   },
-// ];
-
-const ChatRoom = () => {
-  const [chatMessages, setChatMessages] = useState([]);
-
+const ChatRoom = ({ token, isAdmin }) => {
   const socketRef = useRef();
+  const [chatMessages, setChatMessages] = useState([]);
+  const [messageAdminOnly, setMessageAdminOnly] = useState(false);
+
+  const { user } = useAuth0();
 
   useEffect(() => {
-    socketRef.current = io.connect("http://localhost:8080");
-    socketRef.current.on("message", ({ name, message }) => {
-      setChatMessages([
-        ...chatMessages,
-        { name: name, textMessage: message, id: uuidv4() },
-      ]);
-    });
-    return () => socketRef.current.disconnect();
-  }, [chatMessages]);
+    socketRef.current = io.connect(BASE_API_URL);
 
-  const send = (message) => {
-    const name = "Sason";
-    socketRef.current.emit("message", { name, message });
+    socketRef.current.on(
+      "message",
+      ({ name, message, time, isAdmin, messageAdminOnly, userId }) => {
+        setChatMessages([
+          ...chatMessages,
+          {
+            name: name,
+            textMessage: message,
+            id: uuidv4(),
+            time: time,
+            isAdmin,
+            messageAdminOnly,
+            userId,
+          },
+        ]);
+      }
+    );
+
+    if (isAdmin) {
+      socketRef.current.on(
+        "adminOnly",
+        ({ name, message, time, isAdmin, messageAdminOnly, userId }) => {
+          setChatMessages([
+            ...chatMessages,
+            {
+              name: name,
+              textMessage: message,
+              id: uuidv4(),
+              time: time,
+              isAdmin,
+              messageAdminOnly,
+              userId,
+            },
+          ]);
+        }
+      );
+    }
+
+    return () => socketRef.current.disconnect();
+  }, [chatMessages, isAdmin]);
+
+  const submitMessage = (message) => {
+    const { name, sub } = user;
+    const time = Date.now();
+    socketRef.current.emit("message", {
+      token,
+      name,
+      message,
+      time,
+      isAdmin,
+      messageAdminOnly,
+      userId: sub,
+    });
+  };
+
+  const onChangeMessageAdmin = (event) => {
+    setMessageAdminOnly(event.target.checked);
   };
 
   return (
     <div>
-      <h2>ChatRoom</h2>
-      <Messages messages={chatMessages} />
-      <NewMessage onSendMessage={send} />
+      <Messages user={user} messages={chatMessages} />
+      {isAdmin && (
+        <AdminOnly>
+          <FormControlLabel
+            control={<Switch onChange={onChangeMessageAdmin} />}
+            label="Message to admin only"
+          />
+        </AdminOnly>
+      )}
+      <NewMessage onSendMessage={submitMessage} />
     </div>
   );
+};
+
+const AdminOnly = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 20px;
+`;
+
+ChatRoom.propTypes = {
+  token: PropTypes.string,
+  isAdmin: PropTypes.bool,
 };
 
 export default ChatRoom;
